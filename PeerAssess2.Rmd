@@ -1,0 +1,184 @@
+---
+title: "Peer Assessment 1"
+author: "KDiggs86"
+date: "July 16, 2015"
+output: 
+  html_document:
+    keep_md: true
+---
+
+We first load the data in R.
+
+```{r, cache=TRUE} 
+activity <- read.csv("activity.csv")
+```
+
+###Part 1: What is the mean total number of steps taken per day?
+
+We are allowed to ignore missing values. So, we first remove them from the data frame using the filter() function in the dplyr package.
+
+```{r,results="hide"}
+library(dplyr)
+activity1 <- filter(activity, !is.na(activity$step))
+```
+
+Next split the steps column by date and use sapply to sum the number of steps taken each day.
+
+
+```{r}
+steps <- aggregate(activity1$steps, list(activity1$date), sum)
+names(steps) <- c("date","total_steps")
+head(steps)
+```
+
+Now use the summary() function to get the mean and median total number of steps taken each day.
+
+```{r}
+summary(steps$total_steps)
+```
+
+
+Finally we create a histogram of the total number of steps taken each day.
+
+
+```{r}
+hist(steps$total_steps,breaks=8, main = "Histogram of the total number of steps taken each day",xlab="Total Number of Steps",ylab = "Number of Days",col="red")
+```
+
+###Part 2: What is the average daily activity pattern?
+
+We will create a time series plot of the 5 minute intervals and the average number of steps taken (averaged across all days).  
+
+First, we create a dataframe consisting only of the number of steps taken and the time interval.
+
+```{r}
+activity2 <- select(activity1, -date)
+```
+
+Now we need to find the average number of steps taken over each time interval. So, we first change the interval variable into a factor variable. Then use tapply.
+
+```{r}
+activity2$interval <- as.factor(activity2$interval)
+avg_step <- tapply(activity2$step, activity2$interval, mean)
+```
+
+Now we make our plot.
+
+```{r}
+xnames <- names(avg_step)
+plot(avg_step, type = "l", xlab = "time interval", xaxt = "n", ylab = "average number of steps", main = "Average number of steps taken over each time interval")
+axis(1, at=1:length(xnames), labels = xnames)
+```
+
+To end this section we want to determine the 5 minute interval that contains the maximum number of steps. We can tell from our plot that the interval is just under 850. The exact time interval is 835, as shown below.
+
+```{r}
+which.max(avg_step)
+```
+
+
+### Imputing Missing Values
+
+We first figure that there are 2304 missing values. All missing values are in the step variable.
+
+```{r}
+sum(is.na(activity))
+sum(is.na(activity$step))
+```
+
+I want to replace all missing values with the average number of steps taken over the corresponding time interval. (So, replace with what we found in previous part.)
+
+Create a *data frame* of the averages of the time intervals.
+
+```{r}
+avg_step <- aggregate(activity2$step, list(activity2$interval),mean)
+names(avg_step) <- c("time_interval","avg_step")
+head(avg_step)
+```
+
+Glue this data frame to the original activity data frame.
+
+```{r}
+merged_data <- merge(activity, avg_step, by.x="interval",by.y="time_interval",all=TRUE)
+merged_data <- arrange(merged_data,date)
+head(merged_data)
+```
+
+Now replace all missing values in the steps column with the corresponding value in the avg_step column.
+
+```{r}
+stepsNA <- is.na(merged_data$steps)
+merged_data$steps[stepsNA] <- merged_data$avg_step[stepsNA]
+head(merged_data)
+```
+
+Now find the total number of steps taken each day.
+
+```{r}
+new_total_steps <- aggregate(merged_data$steps, list(merged_data$date), sum)
+names(new_total_steps) <- c("date","total_steps")
+head(new_total_steps)
+```
+
+Find the mean and median number of steps taken each day.
+
+```{r}
+summary(new_total_steps$total_steps)
+```
+
+Finally, create a histogram.
+
+```{r}
+hist(new_total_steps$total_steps,breaks=8, main = "Histogram of the total number of steps taken each day",xlab="Total Number of Steps",ylab = "Number of Days",col="blue")
+```
+
+This histogram is similar than the one in Part 1. It seems that imputing the missing values (as opposed to just deleting them) squishes the data together a bit more. But, that's about it for this data set.
+
+###Part 4: Are there differences in patterns between the weekends and weekdays?
+
+First we figure out what days are weekends. Then we create a column in the merged_data data frame that gives weekend vs weekday.
+
+```{r}
+merged_data <- mutate(merged_data, day = weekdays(as.Date(date)))
+head(merged_data)
+days <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
+day_type <- c("Weekday","Weekday","Weekday","Weekday","Weekday", "Weekend","Weekend")
+day_frame <- data.frame(days,day_type)
+day_frame
+merged_data <- merge(merged_data, day_frame, by.x="day", by.y="days",all=TRUE)
+merged_data <- arrange(merged_data,date)
+
+```
+
+
+We need the average steps over each interval for both weekends and weekdays. So, I am going to split the merged_data data frame over each. Find the average number of steps over each interval for each type of day and then glue things back together.
+
+```{r}
+weekday <- filter(merged_data, day_type == "Weekday")
+weekend <- filter(merged_data, day_type == "Weekend")
+avg_weekday <- aggregate(weekday$steps, list(weekday$interval),mean)
+names(avg_weekday) <- c("interval","avg_step")
+avg_weekday <- mutate(avg_weekday, day_type="Weekday")
+head(avg_weekday)
+```
+
+```{r}
+avg_weekend <- aggregate(weekend$steps, list(weekend$interval),mean)
+names(avg_weekend) <- c("interval","avg_step")
+avg_weekend <- mutate(avg_weekend, day_type="Weekend")
+head(avg_weekend)
+```
+
+Gluing avgweekend to avgweekday
+
+```{r}
+avg_by_type <- rbind(avg_weekday,avg_weekend)
+avg_by_type$day_type <- as.factor(avg_by_type$day_type)
+```
+Now we are ready to make a plot!
+
+```{r}
+library(ggplot2)
+g <- ggplot(avg_by_type, aes(interval,avg_step))
+g + geom_line() + facet_grid(.~day_type)+xlab("time interval") + ylab("average number of steps")
+```
