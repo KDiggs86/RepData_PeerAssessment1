@@ -1,6 +1,11 @@
-# Peer Assessment 1
-KDiggs86  
-July 16, 2015  
+---
+title: "Peer Assessment 1"
+author: "KDiggs86"
+date: "July 16, 2015"
+output: 
+  html_document:
+    keep_md: true
+---
 
 We first load the data in R.
 
@@ -16,22 +21,6 @@ We are allowed to ignore missing values. So, we first remove them from the data 
 
 ```r
 library(dplyr)
-```
-
-```
-## 
-## Attaching package: 'dplyr'
-## 
-## The following object is masked from 'package:stats':
-## 
-##     filter
-## 
-## The following objects are masked from 'package:base':
-## 
-##     intersect, setdiff, setequal, union
-```
-
-```r
 activity1 <- filter(activity, !is.na(activity$step))
 ```
 
@@ -76,7 +65,7 @@ Finally we create a histogram of the total number of steps taken each day.
 hist(steps$total_steps,breaks=8, main = "Histogram of the total number of steps taken each day",xlab="Total Number of Steps",ylab = "Number of Days",col="red")
 ```
 
-![](PeerAssess1_files/figure-html/unnamed-chunk-5-1.png) 
+![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5-1.png) 
 
 ###Part 2: What is the average daily activity pattern?
 
@@ -106,7 +95,7 @@ plot(avg_step, type = "l", xlab = "time interval", xaxt = "n", ylab = "average n
 axis(1, at=1:length(xnames), labels = xnames)
 ```
 
-![](PeerAssess1_files/figure-html/unnamed-chunk-8-1.png) 
+![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-8-1.png) 
 
 To end this section we want to determine the 5 minute interval that contains the maximum number of steps. We can tell from our plot that the interval is just under 850. The exact time interval is 835, as shown below.
 
@@ -239,7 +228,7 @@ Finally, create a histogram.
 hist(new_total_steps$total_steps,breaks=8, main = "Histogram of the total number of steps taken each day",xlab="Total Number of Steps",ylab = "Number of Days",col="blue")
 ```
 
-![](PeerAssess1_files/figure-html/unnamed-chunk-16-1.png) 
+![plot of chunk unnamed-chunk-16](figure/unnamed-chunk-16-1.png) 
 
 This histogram is similar than the one in Part 1. It seems that imputing the missing values (as opposed to just deleting them) squishes the data together a bit more. But, that's about it for this data set.
 
@@ -339,15 +328,8 @@ Now we are ready to make a plot!
 
 ```r
 library(ggplot2)
-```
-
-```
-## Warning: package 'ggplot2' was built under R version 3.1.3
-```
-
-```r
 g <- ggplot(avg_by_type, aes(interval,avg_step))
 g + geom_line() + facet_grid(.~day_type)+xlab("time interval") + ylab("average number of steps")
 ```
 
-![](PeerAssess1_files/figure-html/unnamed-chunk-21-1.png) 
+![plot of chunk unnamed-chunk-21](figure/unnamed-chunk-21-1.png) 
